@@ -14,9 +14,9 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podlifecycle
   labels:
     app: podlifecycle
+  name: podlifecycle
 spec:
   replicas: 1
   selector:
@@ -24,18 +24,34 @@ spec:
       app: podlifecycle
   template:
     metadata:
+      annotations:
+        linkerd.io/inject: enabled
       labels:
         app: podlifecycle
     spec:
-      terminationGracePeriodSeconds: 50
       containers:
-        - name: podlifecycle
-          image: jwenz723/podlifecycle
+        - args:
+            - while true; do echo sleeping...; sleep 30; done;
+          command:
+            - ash
+            - -c
+            - --
+          image: jwenz723/grpchealthprobe
+          livenessProbe:
+            exec:
+              command:
+                - /usr/bin/local/grpc-health-probe
+                - -addr=:8080
+            initialDelaySeconds: 10
+          name: grpchealthprobe
+          readinessProbe:
+            exec:
+              command:
+                - /usr/bin/local/grpc-health-probe
+                - -addr=:8080
+            initialDelaySeconds: 5
+        - image: jwenz723/podlifecycle
+          name: podlifecycle
           ports:
             - containerPort: 8080
-          readinessProbe:
-            tcpSocket:
-              port: 8080
-          livenessProbe:
-            tcpSocket:
-              port: 8080
+      terminationGracePeriodSeconds: 50

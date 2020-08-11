@@ -4,10 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	podlifecycle "github.com/jwenz723/podlifecycle/proto"
+	podlifecycle "github.com/jwenz723/podlifecycle/server/proto"
 	"github.com/oklog/run"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"net"
 	"os"
 	"os/signal"
@@ -16,29 +15,33 @@ import (
 )
 
 func main() {
+	grpcAddr := flag.String("grpcAddr", ":8080", "address to expose grpc on")
 	requestDuration := flag.Duration("requestDuration", 0, "duration that each grpc request should take to process")
 	flag.Parse()
+	fmt.Println(*grpcAddr, *requestDuration)
 
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()
 
 	var g run.Group
 	{
-		lis, err := net.Listen("tcp", ":8080")
+		lis, err := net.Listen("tcp", *grpcAddr)
 		if err != nil {
 			logger.Error("failed to start grpc listener", zap.Error(err))
 		}
 		service := stufferService{
-			l: logger,
+			l:               logger,
 			requestDuration: *requestDuration,
 		}
-		server := grpc.NewServer()
+		grpcServer := NewGRPCServerFromListener(lis)
+
 		g.Add(func() error {
-			podlifecycle.RegisterStufferServer(server, &service)
-			return server.Serve(lis)
+			podlifecycle.RegisterStufferServer(grpcServer.Server(), &service)
+			logger.Info("starting grpc server...", zap.String("addr", *grpcAddr))
+			return grpcServer.Start()
 		}, func(err error) {
-			logger.Info("shutting down grpc server")
-			server.GracefulStop()
+			logger.Info("shutting down grpc server...")
+			grpcServer.Stop()
 			lis.Close()
 		})
 	}
@@ -68,14 +71,13 @@ func main() {
 var _ podlifecycle.StufferServer = &stufferService{}
 
 type stufferService struct {
-	l *zap.Logger
+	l               *zap.Logger
 	requestDuration time.Duration
 }
 
-func (s *stufferService) DoStuff(ctx context.Context, req *podlifecycle.StuffRequest) (*podlifecycle.StuffResponse, error) {
-	s.l.Info("DoStuff invoked2", zap.String("name", req.Name))
+func (s *stufferService) DoStuff(_ context.Context, req *podlifecycle.StuffRequest) (*podlifecycle.StuffResponse, error) {
+	s.l.Info("DoStuff invoked3", zap.String("name", req.Name))
 	time.Sleep(s.requestDuration)
-	s.l.Info("DoStuff completed2", zap.String("name", req.Name))
+	s.l.Info("DoStuff completed3", zap.String("name", req.Name))
 	return &podlifecycle.StuffResponse{Name: req.Name}, nil
 }
-

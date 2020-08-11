@@ -13,22 +13,24 @@ const (
 )
 
 func main() {
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := podlifecycle.NewStufferClient(conn)
-
 	for {
+		time.Sleep(1 * time.Second)
+		// Set up a connection to the server.
+		conn, err := grpc.Dial(address, grpc.WithInsecure())
+		if err != nil {
+			log.Printf("did not connect: %v", err)
+			continue
+		}
+		defer conn.Close()
+		c := podlifecycle.NewStufferClient(conn)
+
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		r, err := c.DoStuff(ctx, &podlifecycle.StuffRequest{Name: "test"})
 		if err != nil {
-			log.Fatalf("could not DoStuff: %v", err)
+			log.Printf("could not DoStuff: %v", err)
+			continue
 		}
 		log.Printf("Response: %s", r.GetName())
-		time.Sleep(1 * time.Second)
 	}
 }

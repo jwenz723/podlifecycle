@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: podlifecycle
+  labels:
+    app: podlifecycle
+spec:
+  ports:
+    - port: 8080
+      name: grpc-server
+  selector:
+    app: podlifecycle
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podlifecycle
+  labels:
+    app: podlifecycle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podlifecycle
+  template:
+    metadata:
+      labels:
+        app: podlifecycle
+    spec:
+      terminationGracePeriodSeconds: 50
+      containers:
+        - name: podlifecycle
+          image: jwenz723/podlifecycle
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+          livenessProbe:
+            tcpSocket:
+              port: 8080

@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	podlifecycle "github.com/jwenz723/podlifecycle/proto"
+	podlifecycle "github.com/jwenz723/podlifecycle/server/proto"
 	"google.golang.org/grpc"
 	"log"
 	"time"
 )
 
 const (
-	address     = "localhost:8080"
+	address = "localhost:8080"
 )
 
 func main() {

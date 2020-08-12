@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	address = "192.168.64.24:32332"
+	address = "192.168.64.24:30194"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 			Size: 0,
 		})
 		if err != nil {
-			log.Printf("could not DoStuff: %v", err)
+			log.Printf("could not Work: %v", err)
 			continue
 		}
 		log.Printf("Response: %s", r.GetName())

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: podlifecycle
+  namespace: default
+  labels:
+    app: podlifecycle
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      name: http-server
+  selector:
+    app: podlifecycle
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: podlifecycle
+  name: podlifecycle
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podlifecycle
+  template:
+    metadata:
+      labels:
+        app: podlifecycle
+    spec:
+      containers:
+        - image: jwenz723/podlifecycle
+          name: podlifecycle
+          ports:
+            - containerPort: 8080
+          lifecycle:
+            preStop:
+              httpGet:
+                port: 8080
+                path: /prestop
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /liveness
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /readiness
+      terminationGracePeriodSeconds: 180
+---
+apiVersion: voyager.appscode.com/v1beta1
+kind: Ingress
+metadata:
+  name: podlifecycle-ingress
+  namespace: default
+spec:
+  backend:
+    serviceName: podlifecycle.default
+    servicePort: '8080'

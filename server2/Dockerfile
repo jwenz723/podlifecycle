@@ -16,6 +16,9 @@ RUN mkdir /user && \
 # calls to HTTPS endpoints.
 # Git is required for fetching the dependencies.
 RUN apk add ca-certificates
+#RUN apk add ca-certificates git
+
+#RUN go get github.com/grpc-ecosystem/grpc-health-probe
 
 # Set a directory to contain the go app to be compiled (this directory will work for go apps making use of go modules as long as go 1.13+ is used)
 WORKDIR /go/src/podlifecycle
@@ -44,6 +47,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Import the compiled executable from the first stage.
 COPY --from=builder /podlifecycle /podlifecycle
+
+#COPY --from=builder /go/bin/grpc-health-probe /usr/bin/local/grpc-health-probe
 
 # Perform any further action as an unprivileged user.
 USER nobody:nobody

@@ -5,6 +5,7 @@ metadata:
   labels:
     app: podlifecycle
 spec:
+  type: LoadBalancer
   ports:
     - port: 8080
       name: grpc-server
@@ -22,27 +23,27 @@ spec:
   selector:
     matchLabels:
       app: podlifecycle
+  strategy:
+    rollingUpdate:
+      # This should be set to 0 if we only have 1 replica defined
+      maxUnavailable: 0
   template:
     metadata:
-      annotations:
-        linkerd.io/inject: enabled
       labels:
         app: podlifecycle
+        version: "1"
     spec:
       containers:
-        - args:
-            - while true; do echo sleeping...; sleep 30; done;
-          command:
-            - ash
-            - -c
-            - --
-          image: jwenz723/grpchealthprobe
+        - image: jwenz723/grpchealthprobe
           livenessProbe:
             exec:
               command:
                 - /usr/bin/local/grpc-health-probe
                 - -addr=:8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
+            failureThreshold: 1
+            successThreshold: 1
+            periodSeconds: 10 # this is 3 times the period on readinessProbe
           name: grpchealthprobe
           readinessProbe:
             exec:
@@ -50,8 +51,24 @@ spec:
                 - /usr/bin/local/grpc-health-probe
                 - -addr=:8080
             initialDelaySeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sleep
+                  - "20"
         - image: jwenz723/podlifecycle
           name: podlifecycle
           ports:
             - containerPort: 8080
-      terminationGracePeriodSeconds: 50
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sleep
+                  - "20"
+      # This should be greater than the average amount of time it takes to serve a request to completion
+      terminationGracePeriodSeconds: 30

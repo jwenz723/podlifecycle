@@ -5,7 +5,6 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"net"
-	"sync"
 )
 
 type GRPCServer struct {
@@ -15,8 +14,6 @@ type GRPCServer struct {
 	listener net.Listener
 	// GRPC server
 	server *grpc.Server
-	// lock to protect concurrent access to append / remove
-	lock *sync.Mutex
 	// Server for gRPC Health Check Protocol.
 	healthServer *health.Server
 }
@@ -27,7 +24,6 @@ func NewGRPCServerFromListener(listener net.Listener) *GRPCServer {
 	grpcServer := &GRPCServer{
 		address:  listener.Addr().String(),
 		listener: listener,
-		lock:     &sync.Mutex{},
 	}
 
 	grpcServer.server = grpc.NewServer()
@@ -57,20 +53,6 @@ func (gServer *GRPCServer) Start() error {
 }
 
 func (gServer *GRPCServer) Stop() {
-	// TODO: Is it necessary to set status to NOT_SERVING since incoming requests will be rejected?
-	if gServer.healthServer != nil {
-		for name := range gServer.server.GetServiceInfo() {
-			gServer.healthServer.SetServingStatus(
-				name,
-				healthpb.HealthCheckResponse_NOT_SERVING,
-			)
-		}
-
-		gServer.healthServer.SetServingStatus(
-			"",
-			healthpb.HealthCheckResponse_NOT_SERVING,
-		)
-	}
 	gServer.server.GracefulStop()
 }
 

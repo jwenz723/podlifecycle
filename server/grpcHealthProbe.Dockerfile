@@ -30,3 +30,6 @@ COPY --from=builder /go/bin/grpc-health-probe /usr/bin/local/grpc-health-probe
 
 # Perform any further action as an unprivileged user.
 USER nobody:nobody
+
+# This will sleep indefinitely until SIGTERM or SIGINT occur https://stackoverflow.com/a/35770783
+CMD exec /bin/sh -c "trap : TERM INT; (while true; do sleep 1000; done) & wait"

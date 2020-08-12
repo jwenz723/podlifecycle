@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	podlifecycle "github.com/jwenz723/podlifecycle/server/proto"
+	example "github.com/jwenz723/podlifecycle/server/proto"
 	"github.com/oklog/run"
 	"go.uber.org/zap"
 	"net"
@@ -16,9 +16,7 @@ import (
 
 func main() {
 	grpcAddr := flag.String("grpcAddr", ":8080", "address to expose grpc on")
-	requestDuration := flag.Duration("requestDuration", 0, "duration that each grpc request should take to process")
 	flag.Parse()
-	fmt.Println(*grpcAddr, *requestDuration)
 
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()
@@ -29,14 +27,13 @@ func main() {
 		if err != nil {
 			logger.Error("failed to start grpc listener", zap.Error(err))
 		}
-		service := stufferService{
-			l:               logger,
-			requestDuration: *requestDuration,
+		service := exampleService{
+			l: logger,
 		}
 		grpcServer := NewGRPCServerFromListener(lis)
 
 		g.Add(func() error {
-			podlifecycle.RegisterStufferServer(grpcServer.Server(), &service)
+			example.RegisterExampleServer(grpcServer.Server(), &service)
 			logger.Info("starting grpc server...", zap.String("addr", *grpcAddr))
 			return grpcServer.Start()
 		}, func(err error) {
@@ -64,20 +61,20 @@ func main() {
 		})
 	}
 
-	logger.Info("starting...")
 	logger.Info("exiting", zap.Error(g.Run()))
 }
 
-var _ podlifecycle.StufferServer = &stufferService{}
-
-type stufferService struct {
+type exampleService struct {
 	l               *zap.Logger
 	requestDuration time.Duration
 }
 
-func (s *stufferService) DoStuff(_ context.Context, req *podlifecycle.StuffRequest) (*podlifecycle.StuffResponse, error) {
-	s.l.Info("DoStuff invoked3", zap.String("name", req.Name))
-	time.Sleep(s.requestDuration)
-	s.l.Info("DoStuff completed3", zap.String("name", req.Name))
-	return &podlifecycle.StuffResponse{Name: req.Name}, nil
+// Work implements example.ExampleServer
+func (s *exampleService) Work(_ context.Context, req *example.WorkItem) (*example.WorkResponse, error) {
+	s.l.Info("Work invoked", zap.String("name", req.Name), zap.Int("size", int(req.Size)))
+
+	// sleep based upon the specified request size to simulate slow requests
+	time.Sleep(time.Duration(req.Size) * time.Second)
+
+	return &example.WorkResponse{Name: req.Name}, nil
 }

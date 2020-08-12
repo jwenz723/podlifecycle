@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = ".;example";
+
+service Example {
+    rpc Work(WorkItem) returns (WorkResponse) {}
+}
+
+message WorkItem {
+    string name = 1;
+    int32 size = 2;
+}
+
+message WorkResponse {
+    string name = 1;
+}

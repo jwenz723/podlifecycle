@@ -12,3 +12,4 @@ deploy:
   kubectl:
     manifests:
       - ./k8s/*
+

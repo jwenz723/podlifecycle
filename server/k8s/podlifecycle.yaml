@@ -34,17 +34,17 @@ spec:
         version: "1"
     spec:
       containers:
-        - image: jwenz723/grpchealthprobe
+        - image: jwenz723/podlifecycle
           livenessProbe:
             exec:
               command:
+                # /usr/bin/local/grpc-health-probe  must be compiled into the image for this command to work
                 - /usr/bin/local/grpc-health-probe
                 - -addr=localhost:8080
             initialDelaySeconds: 30
             failureThreshold: 1
             successThreshold: 1
             periodSeconds: 10 # this is 3 times the period on readinessProbe
-          name: grpchealthprobe
           readinessProbe:
             exec:
               command:
@@ -54,13 +54,6 @@ spec:
             failureThreshold: 3
             successThreshold: 1
             periodSeconds: 3
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                  - /bin/sleep
-                  - "20"
-        - image: jwenz723/podlifecycle
           name: podlifecycle
           ports:
             - containerPort: 8080

@@ -32,6 +32,9 @@ COPY . .
 RUN go build \
     -installsuffix 'static' \
     -o /podlifecycle .
+    
+# Get and build the grpc-health-probe binary
+RUN go get github.com/grpc-ecosystem/grpc-health-probe@v0.3.3-0.20200507193426-20322857ebec
 
 # Final stage: the running container.
 FROM alpine AS final
@@ -44,6 +47,9 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Import the compiled executable from the first stage.
 COPY --from=builder /podlifecycle /podlifecycle
+
+# Import the compiled grpc-health-probe from the first stage
+COPY --from=builder /go/bin/grpc-health-probe /usr/bin/local/grpc-health-probe
 
 # Perform any further action as an unprivileged user.
 USER nobody:nobody
